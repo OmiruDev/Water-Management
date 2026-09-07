@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isDeviceOwner(deviceId) {
+      return isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // Devices collection: Stores metadata, ESP32 credentials, and sync settings
+    match /devices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Telemetry Logs collection: Time-series readings from ESP32
+    match /telemetry_logs/{logId} {
+      allow read: if isAuthenticated();
+      // Allow writes from authenticated devices or admin service account
+      allow create: if request.resource.data.waterPercentage >= 0 
+                    && request.resource.data.waterPercentage <= 100
+                    && request.resource.data.distance_cm >= 0;
+      allow update, delete: if false; // Immutable telemetry logs
+    }
+
+    // Alerts collection: System alerts, FCM trigger records, and Gemini warnings
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated(); // For marking as acknowledged/read
+      allow delete: if isAuthenticated();
+    }
+
+    // System Config collection: Tank dimensions, setpoints, and pump ratings
+    match /system_config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+  }
+}

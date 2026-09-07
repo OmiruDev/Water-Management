@@ -1,0 +1,115 @@
+{
+  "collections": {
+    "devices": {
+      "description": "Registered ESP32 IoT Nodes and tank metadata",
+      "fields": {
+        "deviceId": "string (Unique identifier, e.g. 'ESP32_TANK_01')",
+        "deviceName": "string (Human readable label, e.g. 'Main Rooftop Tank')",
+        "ownerId": "string (Firebase Auth UID)",
+        "ipAddress": "string (Local LAN IP, e.g. '192.168.1.124')",
+        "firmwareVersion": "string (e.g. 'v2.1.4')",
+        "lastHeartbeat": "timestamp (Server timestamp of last received packet)",
+        "status": "'online' | 'offline' | 'degraded'",
+        "rssi": "number (Wi-Fi signal strength in dBm)",
+        "createdAt": "timestamp"
+      },
+      "sampleDocument": {
+        "deviceId": "ESP32_TANK_01",
+        "deviceName": "Main Rooftop Cistern",
+        "ownerId": "usr_998124a",
+        "ipAddress": "192.168.1.145",
+        "firmwareVersion": "v2.1.4-esp32",
+        "lastHeartbeat": "2026-09-07T09:30:00Z",
+        "status": "online",
+        "rssi": -58,
+        "createdAt": "2026-01-15T08:00:00Z"
+      }
+    },
+    "telemetry_logs": {
+      "description": "Continuous time-series sensor ingestion records from ESP32",
+      "fields": {
+        "deviceId": "string (Foreign key referencing devices collection)",
+        "timestamp": "timestamp (Indexed for fast time-series queries)",
+        "waterPercentage": "number (0 - 100% calibrated fill ratio)",
+        "distance_cm": "number (Raw ultrasonic time-of-flight distance)",
+        "waterVolumeLiters": "number (Calculated volume based on cylinder geometry)",
+        "pumpState": "'ON' | 'OFF' (Active electrical relay relay state)",
+        "flowRateLpm": "number (Current measured or rated fluid flow in L/min)",
+        "batteryVoltage": "number (Optional auxiliary backup battery voltage, e.g. 3.95V)",
+        "temperatureC": "number (Ambient / water sensor temperature)"
+      },
+      "indices": [
+        { "fields": ["deviceId", "timestamp"], "order": "DESC" }
+      ],
+      "sampleDocument": {
+        "deviceId": "ESP32_TANK_01",
+        "timestamp": "2026-09-07T09:35:00Z",
+        "waterPercentage": 68.5,
+        "distance_cm": 78,
+        "waterVolumeLiters": 1548,
+        "pumpState": "OFF",
+        "flowRateLpm": 0,
+        "batteryVoltage": 3.95,
+        "temperatureC": 24.2
+      }
+    },
+    "alerts": {
+      "description": "Safety threshold triggers, FCM notifications, and Gemini AI warnings",
+      "fields": {
+        "id": "string",
+        "deviceId": "string",
+        "type": "'critical_low' | 'overflow_risk' | 'leak_detected' | 'device_offline' | 'dry_run_prevented' | 'ai_warning'",
+        "severity": "'critical' | 'warning' | 'info'",
+        "title": "string",
+        "message": "string",
+        "metricValue": "string | number (e.g. '12.4%' or '35 L/h')",
+        "read": "boolean",
+        "timestamp": "timestamp",
+        "fcmMessageId": "string (Firebase Cloud Messaging delivery receipt)"
+      },
+      "sampleDocument": {
+        "id": "alt_918237",
+        "deviceId": "ESP32_TANK_01",
+        "type": "critical_low",
+        "severity": "critical",
+        "title": "Critical Low Water Level (<15%)",
+        "message": "Tank is at 13.8%. Automatic cutoff invoked to prevent pump dry-run damage.",
+        "metricValue": "13.8%",
+        "read": false,
+        "timestamp": "2026-09-07T09:32:15Z",
+        "fcmMessageId": "projects/smart-tank/messages/0:1694079135"
+      }
+    },
+    "system_config": {
+      "description": "Physical tank dimensions, calibration constants, and pump automation setpoints",
+      "fields": {
+        "deviceId": "string",
+        "tankHeightCm": "number (Total vertical height of water cylinder)",
+        "tankRadiusCm": "number (Radius for volumetric calculation: pi * r^2 * h)",
+        "sensorOffsetCm": "number (Ultrasonic face offset distance above 100% mark)",
+        "pumpOnPercent": "number (Water level percentage trigger to start refill)",
+        "pumpOffPercent": "number (Water level percentage trigger to stop refill)",
+        "pumpFlowRateLpm": "number (Pump flow rate in liters per minute)",
+        "pumpPowerWatts": "number (Motor electrical rating in Watts for kWh math)",
+        "electricityCostPerKWh": "number (Local power tariff for cost estimation)",
+        "autoMode": "boolean (Whether cloud/ESP32 logic automatically triggers relay)",
+        "leakDetectionThresholdLph": "number (Litres/hour drop rate considered an anomaly)",
+        "updatedAt": "timestamp"
+      },
+      "sampleDocument": {
+        "deviceId": "ESP32_TANK_01",
+        "tankHeightCm": 200,
+        "tankRadiusCm": 60,
+        "sensorOffsetCm": 15,
+        "pumpOnPercent": 20,
+        "pumpOffPercent": 95,
+        "pumpFlowRateLpm": 35,
+        "pumpPowerWatts": 750,
+        "electricityCostPerKWh": 0.16,
+        "autoMode": true,
+        "leakDetectionThresholdLph": 15,
+        "updatedAt": "2026-09-07T09:00:00Z"
+      }
+    }
+  }
+}
