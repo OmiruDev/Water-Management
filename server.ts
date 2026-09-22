@@ -236,17 +236,142 @@ function addAlert(alert: Omit<SystemAlert, 'id' | 'timestamp' | 'read'>) {
   if (activeAlerts.length > 50) activeAlerts.pop();
 }
 
-// Lazy Gemini API Client
+// Lazy Gemini API Client with aistudio-build User-Agent
 let genAI: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI | null {
   if (!process.env.GEMINI_API_KEY) return null;
   if (!genAI) {
-    genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
   }
   return genAI;
 }
 
+// Resilient Gemini generator with retry, timeout, and model fallback for transient 503 spikes
+async function generateWithGemini(
+  ai: GoogleGenAI,
+  params: {
+    contents: any;
+    config?: any;
+  }
+) {
+  const models = ['gemini-3.8-flash', 'gemini-flash-latest'];
+  let lastError: any = null;
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini API call timed out')), 9000)
+        );
+        const generatePromise = ai.models.generateContent({
+          model,
+          contents: params.contents,
+          config: params.config,
+        });
+        const response: any = await Promise.race([generatePromise, timeoutPromise]);
+        return response;
+      } catch (err: any) {
+        lastError = err;
+        const msg = String(err?.message || '');
+        const is503OrUnavailable = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand');
+        const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
+
+        if ((is503OrUnavailable || isRateLimit) && attempt === 0) {
+          // Brief pause before retry on transient surge
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          continue;
+        }
+        break; // try fallback model
+      }
+    }
+  }
+  throw lastError;
+}
+
+// Deterministic telemetry calculations for leak analysis
+function getDeterministicLeakAnalysis(): AILeakAnalysis {
+  const isLeaking = activeSimulatedLeakLph > 0 || (currentTelemetry.pumpState === 'OFF' && activeSimulatedLeakLph > 10);
+  return {
+    leakDetected: isLeaking,
+    confidenceScore: isLeaking ? 94 : 12,
+    estimatedLossRateLph: isLeaking ? activeSimulatedLeakLph : 0,
+    dropRatePercentPerHr: isLeaking ? Number(((activeSimulatedLeakLph / currentTelemetry.maxVolumeLiters) * 100).toFixed(2)) : 0.4,
+    severity: isLeaking ? (activeSimulatedLeakLph > 30 ? 'critical' : 'moderate') : 'none',
+    explanation: isLeaking
+      ? `Telemetry analysis flagged a sustained drop rate of ${activeSimulatedLeakLph} L/h during standby periods while the pump was OFF. Pattern matches an underground pipe breach or faulty float valve.`
+      : `Standby telemetry reveals nominal pressure retention. Drop rate of ~0.4%/hr aligns with normal static evaporation and standby line pressure.`,
+    recommendedAction: isLeaking
+      ? `Isolate the downstream distribution manifold and inspect the perimeter float valve and pump check-valve immediately.`
+      : `No action required. System pressure and tank integrity are fully nominal.`,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// Deterministic calculations for predictive water & energy forecast
+function getDeterministicForecast(): AIPrediction {
+  const currentVol = currentTelemetry.waterVolumeLiters;
+  const maxVol = currentTelemetry.maxVolumeLiters;
+  const avgDailyCons = 550; // Litres
+  const hourlyBurn = avgDailyCons / 24;
+  const approxHoursLeft = currentVol > 0 ? Number((currentVol / hourlyBurn).toFixed(1)) : 0;
+  const dryDate = new Date(Date.now() + approxHoursLeft * 3600 * 1000);
+
+  return {
+    hoursUntilDry: approxHoursLeft,
+    predictedDryTimestamp: dryDate.toISOString(),
+    suggestedRefillTime: '04:30 AM - 06:00 AM (Off-peak electricity window)',
+    peakUsageWindow: '07:30 AM - 09:15 AM & 06:45 PM - 08:30 PM',
+    dailyConsumptionEstimateLiters: avgDailyCons,
+    smartScheduleAdvice: 'Schedule pre-dawn automated refill to capitalize on off-peak electricity tariffs and minimize municipal pressure fluctuations.',
+    efficiencyScore: 88,
+    insights: [
+      `Current reserves will sustain normal household demand for approximately ${Math.floor(approxHoursLeft)} hours.`,
+      `Refill trigger recommended before tank level falls under 20% (${Math.round(maxVol * 0.2)} L).`,
+      `Running the pump between 4:00 AM - 6:00 AM avoids midday peak electricity surcharges and reduces evaporation loss.`,
+    ],
+  };
+}
+
+// Deterministic assistant knowledge replies
+function getDeterministicChatReply(message: string, currentSystemState: any): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('how much water') || lower.includes('usage') || lower.includes('use')) {
+    return `Today your household consumed approximately ${currentSystemState.last24hConsumption}. The tank currently holds ${currentSystemState.waterVolume} (${currentSystemState.waterPercentage} capacity).`;
+  }
+  if (lower.includes('pump') || lower.includes('behaving') || lower.includes('motor')) {
+    return `The pump is currently **${currentSystemState.pumpStatus}**. Over the last 24 hours, it has logged ${currentSystemState.pumpTotalRuntimeMinutes} minutes of active run-time, consuming ~${((currentSystemState.pumpTotalRuntimeMinutes / 60) * (currentConfig.pumpPowerWatts / 1000)).toFixed(2)} kWh. All mechanical parameters are nominal.`;
+  }
+  if (lower.includes('leak')) {
+    if (activeSimulatedLeakLph > 0) {
+      return `⚠️ Anomaly detected! Active loss rate of ${activeSimulatedLeakLph} L/h recorded during pump standby. We advise checking the main intake valve.`;
+    }
+    return `No leaks detected! Standby water drop rates are fully within normal parameters (< 0.5% / hour).`;
+  }
+  if (lower.includes('refill') || lower.includes('when') || lower.includes('dry')) {
+    const hoursLeft = Number((currentTelemetry.waterVolumeLiters / (550 / 24)).toFixed(1));
+    return `At current consumption rates, the tank has approximately **${hoursLeft} hours** of reserve remaining. We recommend triggering a refill when water levels drop below ${currentConfig.pumpOnPercent}% (~04:00 AM off-peak window).`;
+  }
+  return `Current Tank Telemetry: Level is at **${currentSystemState.waterPercentage}** (${currentSystemState.waterVolume}), Distance to water surface is ${currentSystemState.distanceToSurface}, Pump is **${currentSystemState.pumpStatus}**, and Hardware status is ${currentSystemState.hardwareConnection}. How else can I assist with your water management?`;
+}
+
 // --- API Endpoints ---
+
+// 0. Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    service: 'Smart Water Tank Server',
+    deviceId: currentConfig.deviceId,
+  });
+});
 
 // 1. Current Telemetry
 app.get('/api/telemetry', (req, res) => {
@@ -376,12 +501,15 @@ app.get('/api/config', (req, res) => {
   res.json({ success: true, config: currentConfig });
 });
 
-app.put('/api/config', (req, res) => {
+const updateConfigHandler = (req: express.Request, res: express.Response) => {
   currentConfig = { ...currentConfig, ...req.body };
   currentTelemetry.maxVolumeLiters = calculateMaxVolume(currentConfig.tankHeightCm, currentConfig.tankRadiusCm);
   currentTelemetry.waterVolumeLiters = Math.round((currentTelemetry.waterPercentage / 100) * currentTelemetry.maxVolumeLiters);
   res.json({ success: true, config: currentConfig });
-});
+};
+
+app.post('/api/config', updateConfigHandler);
+app.put('/api/config', updateConfigHandler);
 
 // 6. Alerts
 app.get('/api/alerts', (req, res) => {
@@ -454,43 +582,38 @@ app.post('/api/simulation/reset', (req, res) => {
 
 // 8. Leak & Anomaly Detection
 app.post('/api/ai/analyze-leak', async (req, res) => {
-  try {
-    const ai = getGeminiClient();
-    const telemetryContext = {
-      waterPercentage: currentTelemetry.waterPercentage,
-      waterVolumeLiters: currentTelemetry.waterVolumeLiters,
-      maxVolumeLiters: currentTelemetry.maxVolumeLiters,
-      pumpState: currentTelemetry.pumpState,
-      simulatedLeakLph: activeSimulatedLeakLph,
-      recentTrend: historyLogs.slice(-6).map(h => ({
-        time: h.label,
-        level: h.waterPercentage,
-        consumedLiters: h.consumptionLiters,
-        pumpState: h.pumpState
-      })),
-      leakThresholdLph: currentConfig.leakDetectionThresholdLph
-    };
+  const telemetryContext = {
+    waterPercentage: currentTelemetry.waterPercentage,
+    waterVolumeLiters: currentTelemetry.waterVolumeLiters,
+    maxVolumeLiters: currentTelemetry.maxVolumeLiters,
+    pumpState: currentTelemetry.pumpState,
+    simulatedLeakLph: activeSimulatedLeakLph,
+    recentTrend: historyLogs.slice(-6).map((h) => ({
+      time: h.label,
+      level: h.waterPercentage,
+      consumedLiters: h.consumptionLiters,
+      pumpState: h.pumpState,
+    })),
+    leakThresholdLph: currentConfig.leakDetectionThresholdLph,
+  };
 
-    if (!ai) {
-      // Fallback domain-engineered heuristic when no API key is provided
-      const isLeaking = activeSimulatedLeakLph > 0 || (currentTelemetry.pumpState === 'OFF' && activeSimulatedLeakLph > 10);
-      const simulatedResult: AILeakAnalysis = {
-        leakDetected: isLeaking,
-        confidenceScore: isLeaking ? 94 : 12,
-        estimatedLossRateLph: isLeaking ? activeSimulatedLeakLph : 0,
-        dropRatePercentPerHr: isLeaking ? Number(((activeSimulatedLeakLph / currentTelemetry.maxVolumeLiters) * 100).toFixed(2)) : 0.4,
-        severity: isLeaking ? (activeSimulatedLeakLph > 30 ? 'critical' : 'moderate') : 'none',
-        explanation: isLeaking
-          ? `Gemini telemetry analysis flagged a sustained drop rate of ${activeSimulatedLeakLph} L/h during standby periods while the pump was OFF. Pattern matches an underground pipe breach or faulty float valve.`
-          : `Standby telemetry reveals nominal pressure retention. Drop rate of ~0.4%/hr aligns with normal static evaporation and standby line pressure.`,
-        recommendedAction: isLeaking
-          ? `Isolate the downstream distribution manifold and inspect the perimeter float valve and pump check-valve immediately.`
-          : `No action required. System pressure and tank integrity are fully nominal.`,
-        timestamp: new Date().toISOString(),
-      };
-      return res.json({ success: true, analysis: simulatedResult, mode: 'local_heuristic' });
+  const ai = getGeminiClient();
+
+  if (!ai) {
+    const fallback = getDeterministicLeakAnalysis();
+    if (fallback.leakDetected) {
+      addAlert({
+        type: 'ai_warning',
+        severity: fallback.severity === 'critical' ? 'critical' : 'warning',
+        title: 'Suspected Water Leak',
+        message: `${fallback.explanation} Recommended: ${fallback.recommendedAction}`,
+        metricValue: `${fallback.estimatedLossRateLph} L/h`,
+      });
     }
+    return res.json({ success: true, analysis: fallback, mode: 'local_heuristic' });
+  }
 
+  try {
     const prompt = `You are a Smart Water Tank Telemetry AI expert analyzing IoT sensor data for leak and anomaly detection.
 Analyze the following telemetry:
 ${JSON.stringify(telemetryContext, null, 2)}
@@ -506,12 +629,11 @@ Provide a strict JSON response matching this schema:
   "recommendedAction": string (clear physical inspection or maintenance step)
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithGemini(ai, {
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
-      }
+      },
     });
 
     const parsed: AILeakAnalysis = JSON.parse(response.text || '{}');
@@ -527,42 +649,36 @@ Provide a strict JSON response matching this schema:
       });
     }
 
-    res.json({ success: true, analysis: parsed, mode: 'gemini_api' });
+    return res.json({ success: true, analysis: parsed, mode: 'gemini_api' });
   } catch (err: any) {
-    console.error('Gemini leak analysis error:', err);
-    res.status(500).json({ error: err.message });
+    console.warn('Gemini leak analysis temporarily unavailable (using deterministic telemetry engine):', err?.message || err);
+    // Graceful fallback prevents application failure during upstream 503 high demand spikes
+    const fallback = getDeterministicLeakAnalysis();
+    if (fallback.leakDetected) {
+      addAlert({
+        type: 'ai_warning',
+        severity: fallback.severity === 'critical' ? 'critical' : 'warning',
+        title: 'Telemetry Warning: Suspected Water Leak',
+        message: `${fallback.explanation} Recommended: ${fallback.recommendedAction}`,
+        metricValue: `${fallback.estimatedLossRateLph} L/h`,
+      });
+    }
+    return res.json({ success: true, analysis: fallback, mode: 'deterministic_telemetry_model' });
   }
 });
 
 // 9. Predictive Refill & Run-Dry Warnings + Smart Scheduling
 app.post('/api/ai/forecast', async (req, res) => {
+  const ai = getGeminiClient();
+
+  if (!ai) {
+    const fallback = getDeterministicForecast();
+    return res.json({ success: true, prediction: fallback, mode: 'local_heuristic' });
+  }
+
   try {
-    const ai = getGeminiClient();
     const currentVol = currentTelemetry.waterVolumeLiters;
     const maxVol = currentTelemetry.maxVolumeLiters;
-    const avgDailyCons = 550; // Litres
-    const hourlyBurn = avgDailyCons / 24;
-    const approxHoursLeft = currentVol > 0 ? Number((currentVol / hourlyBurn).toFixed(1)) : 0;
-
-    const dryDate = new Date(Date.now() + approxHoursLeft * 3600 * 1000);
-
-    if (!ai) {
-      const prediction: AIPrediction = {
-        hoursUntilDry: approxHoursLeft,
-        predictedDryTimestamp: dryDate.toISOString(),
-        suggestedRefillTime: '04:30 AM - 06:00 AM (Off-peak electricity window)',
-        peakUsageWindow: '07:30 AM - 09:15 AM & 06:45 PM - 08:30 PM',
-        dailyConsumptionEstimateLiters: avgDailyCons,
-        smartScheduleAdvice: 'Schedule pre-dawn automated refill to capitalize on off-peak electricity tariffs and minimize municipal pressure fluctuations.',
-        efficiencyScore: 88,
-        insights: [
-          `Current reserves will sustain normal household demand for approximately ${Math.floor(approxHoursLeft)} hours.`,
-          `Refill trigger recommended before tank level falls under 20% (${Math.round(maxVol * 0.2)} L).`,
-          `Running the pump between 4:00 AM - 6:00 AM avoids midday peak electricity surcharges and reduces evaporation loss.`
-        ]
-      };
-      return res.json({ success: true, prediction, mode: 'local_heuristic' });
-    }
 
     const prompt = `You are a Smart Water & Energy Resource Forecasting AI.
 Given:
@@ -585,19 +701,20 @@ Generate a predictive forecast and scheduling recommendation as a strict JSON ob
   "insights": string[] (3 actionable bullet points)
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithGemini(ai, {
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
-      }
+      },
     });
 
     const parsed: AIPrediction = JSON.parse(response.text || '{}');
-    res.json({ success: true, prediction: parsed, mode: 'gemini_api' });
+    return res.json({ success: true, prediction: parsed, mode: 'gemini_api' });
   } catch (err: any) {
-    console.error('Gemini forecast error:', err);
-    res.status(500).json({ error: err.message });
+    console.warn('Gemini forecast temporarily unavailable (using deterministic prediction model):', err?.message || err);
+    // Graceful fallback prevents application failure during upstream 503 high demand spikes
+    const fallback = getDeterministicForecast();
+    return res.json({ success: true, prediction: fallback, mode: 'deterministic_telemetry_model' });
   }
 });
 
@@ -606,8 +723,6 @@ app.post('/api/ai/chat', async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
-
-    const ai = getGeminiClient();
 
     const currentSystemState = {
       device: currentConfig.deviceName,
@@ -622,27 +737,10 @@ app.post('/api/ai/chat', async (req, res) => {
       pumpTotalRuntimeMinutes: historyLogs.reduce((acc, curr) => acc + curr.pumpMinutesActive, 0),
     };
 
-    if (!ai) {
-      // Intelligent responsive conversational fallback
-      const lower = message.toLowerCase();
-      let reply = '';
-      if (lower.includes('how much water') || lower.includes('usage') || lower.includes('use')) {
-        reply = `Today your household consumed approximately ${currentSystemState.last24hConsumption}. The tank currently holds ${currentSystemState.waterVolume} (${currentSystemState.waterPercentage} capacity).`;
-      } else if (lower.includes('pump') || lower.includes('behaving') || lower.includes('motor')) {
-        reply = `The pump is currently **${currentSystemState.pumpStatus}**. Over the last 24 hours, it has logged ${currentSystemState.pumpTotalRuntimeMinutes} minutes of active run-time, consuming ~${((currentSystemState.pumpTotalRuntimeMinutes / 60) * (currentConfig.pumpPowerWatts / 1000)).toFixed(2)} kWh. All mechanical parameters are nominal.`;
-      } else if (lower.includes('leak')) {
-        if (activeSimulatedLeakLph > 0) {
-          reply = `⚠️ Anomaly detected! Active loss rate of ${activeSimulatedLeakLph} L/h recorded during pump standby. We advise checking the main intake valve.`;
-        } else {
-          reply = `No leaks detected! Standby water drop rates are fully within normal parameters (< 0.5% / hour).`;
-        }
-      } else if (lower.includes('refill') || lower.includes('when') || lower.includes('dry')) {
-        const hoursLeft = Number((currentTelemetry.waterVolumeLiters / (550 / 24)).toFixed(1));
-        reply = `At current consumption rates, the tank has approximately **${hoursLeft} hours** of reserve remaining. We recommend triggering a refill when water levels drop below ${currentConfig.pumpOnPercent}% (~04:00 AM off-peak window).`;
-      } else {
-        reply = `Current Tank Telemetry: Level is at **${currentSystemState.waterPercentage}** (${currentSystemState.waterVolume}), Distance to water surface is ${currentSystemState.distanceToSurface}, Pump is **${currentSystemState.pumpStatus}**, and Hardware status is ${currentSystemState.hardwareConnection}. How else can I assist with your water management?`;
-      }
+    const ai = getGeminiClient();
 
+    if (!ai) {
+      const reply = getDeterministicChatReply(message, currentSystemState);
       return res.json({
         success: true,
         reply,
@@ -650,12 +748,13 @@ app.post('/api/ai/chat', async (req, res) => {
           'How much water did we use today?',
           'Is the pump behaving normally?',
           'When will the tank run dry?',
-          'Are there any leaks detected?'
-        ]
+          'Are there any leaks detected?',
+        ],
       });
     }
 
-    const systemPrompt = `You are "AquaBot", an intelligent Smart Water Tank & Resource Management Assistant integrated with an ESP32 IoT telemetry system.
+    try {
+      const systemPrompt = `You are "AquaBot", an intelligent Smart Water Tank & Resource Management Assistant integrated with an ESP32 IoT telemetry system.
 Current real-time system state:
 ${JSON.stringify(currentSystemState, null, 2)}
 System Configuration:
@@ -666,26 +765,39 @@ System Configuration:
 
 Provide a concise, direct, professional answer with specific metrics. If the user asks about water usage, pump health, leaks, or scheduling, cite the exact numbers from the telemetry state.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: message,
-      config: {
-        systemInstruction: systemPrompt,
-      }
-    });
+      const response = await generateWithGemini(ai, {
+        contents: message,
+        config: {
+          systemInstruction: systemPrompt,
+        },
+      });
 
-    res.json({
-      success: true,
-      reply: response.text,
-      suggestedQuestions: [
-        'How much water did we use today?',
-        'Is the pump behaving normally?',
-        'When will the tank run dry?',
-        'Suggest an energy-efficient refill schedule'
-      ]
-    });
+      return res.json({
+        success: true,
+        reply: response.text,
+        suggestedQuestions: [
+          'How much water did we use today?',
+          'Is the pump behaving normally?',
+          'When will the tank run dry?',
+          'Suggest an energy-efficient refill schedule',
+        ],
+      });
+    } catch (modelErr: any) {
+      console.warn('Gemini chat temporarily unavailable (using deterministic conversational engine):', modelErr?.message || modelErr);
+      const reply = getDeterministicChatReply(message, currentSystemState);
+      return res.json({
+        success: true,
+        reply,
+        suggestedQuestions: [
+          'How much water did we use today?',
+          'Is the pump behaving normally?',
+          'When will the tank run dry?',
+          'Are there any leaks detected?',
+        ],
+      });
+    }
   } catch (err: any) {
-    console.error('Gemini chat error:', err);
+    console.error('Fatal chat endpoint error:', err);
     res.status(500).json({ error: err.message });
   }
 });

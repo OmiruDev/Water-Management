@@ -39,20 +39,20 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
   const isLeaking = leakAnalysis?.leakDetected || simulatedLeakLph > 0;
 
   return (
-    <div id="ai-insights-panel" className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-[0_0_40px_rgba(15,23,42,0.4)] space-y-6 backdrop-blur-sm relative overflow-hidden">
+    <div id="ai-insights-panel" className="bg-slate-900/40 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-[0_0_40px_rgba(15,23,42,0.4)] space-y-5 sm:space-y-6 backdrop-blur-sm relative overflow-hidden">
       {/* Panel Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 sm:pb-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)] shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-slate-100">
+              <h3 className="text-base sm:text-lg font-bold text-slate-100">
                 AI Intelligence Layer
               </h3>
               <span className="text-[10px] bg-blue-500/20 text-blue-300 font-mono px-2 py-0.5 rounded-full border border-blue-500/30">
-                Gemini 2.5 Flash
+                Gemini 3.8 Flash
               </span>
             </div>
             <p className="text-xs text-slate-400">
@@ -61,20 +61,20 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Simulate Leak Trigger for Demonstration */}
           <button
             id="toggle-simulated-leak-btn"
             type="button"
             onClick={() => onToggleSimulatedLeak(simulatedLeakLph > 0 ? 0 : 38)}
-            className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-initial justify-center px-3 py-2 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer min-h-[40px] ${
               simulatedLeakLph > 0
                 ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
                 : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Droplet className={`w-3.5 h-3.5 ${simulatedLeakLph > 0 ? 'text-rose-400 animate-bounce' : 'text-slate-400'}`} />
-            <span>{simulatedLeakLph > 0 ? `Simulated Leak: ${simulatedLeakLph} L/h (Stop)` : 'Simulate Pipe Leak'}</span>
+            <Droplet className={`w-3.5 h-3.5 shrink-0 ${simulatedLeakLph > 0 ? 'text-rose-400 animate-bounce' : 'text-slate-400'}`} />
+            <span className="truncate">{simulatedLeakLph > 0 ? `Leak: ${simulatedLeakLph} L/h (Stop)` : 'Simulate Leak'}</span>
           </button>
 
           {/* Refresh AI Button */}
@@ -83,16 +83,16 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
             type="button"
             onClick={onRefreshAI}
             disabled={isLoading}
-            className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/50 text-xs font-bold uppercase tracking-tight rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/50 text-xs font-bold uppercase tracking-tight rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer min-h-[40px]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Analyzing...' : 'Run Diagnostics'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="truncate">{isLoading ? 'Analyzing...' : 'Run Diagnostics'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Grid: 2 Primary Feature Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Module 1: Leak & Anomaly Detection */}
         <div className={`rounded-2xl border p-5 transition-all flex flex-col justify-between ${
           isLeaking 

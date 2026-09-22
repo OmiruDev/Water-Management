@@ -83,31 +83,31 @@ export const AquaChatBot: React.FC<AquaChatBotProps> = ({ telemetry }) => {
   };
 
   return (
-    <div id="aqua-chat-bot-container" className="bg-slate-900/40 border border-slate-800 rounded-3xl shadow-[0_0_30px_rgba(15,23,42,0.4)] flex flex-col h-[460px] overflow-hidden backdrop-blur-sm">
+    <div id="aqua-chat-bot-container" className="bg-slate-900/40 border border-slate-800 rounded-3xl shadow-[0_0_30px_rgba(15,23,42,0.4)] flex flex-col h-[420px] sm:h-[460px] overflow-hidden backdrop-blur-sm">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)]">
-            <Bot className="w-5 h-5" />
+      <div className="p-3.5 sm:p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)] shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm text-slate-100">AquaBot Assistant</h3>
-              <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">
+              <span className="text-[9px] sm:text-[10px] font-mono bg-emerald-500/10 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">
                 LIVE GROUNDED
               </span>
             </div>
-            <p className="text-xs text-slate-400">Natural language telemetry Q&A powered by Gemini</p>
+            <p className="text-[11px] sm:text-xs text-slate-400">Natural language telemetry Q&A powered by Gemini</p>
           </div>
         </div>
       </div>
 
       {/* Message Stream */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 sm:space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-3 max-w-[85%] ${
+            className={`flex gap-2.5 sm:gap-3 max-w-[90%] sm:max-w-[85%] ${
               msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
             }`}
           >
@@ -123,9 +123,9 @@ export const AquaChatBot: React.FC<AquaChatBotProps> = ({ telemetry }) => {
             </div>
 
             {/* Bubble */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2 min-w-0">
               <div
-                className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
+                className={`p-3 sm:p-3.5 rounded-2xl text-xs leading-relaxed break-words ${
                   msg.sender === 'user'
                     ? 'bg-blue-600/20 border border-blue-500/40 text-blue-100 rounded-tr-xs shadow-[0_0_15px_rgba(59,130,246,0.15)]'
                     : 'bg-slate-950/80 text-slate-200 rounded-tl-xs border border-slate-800 shadow-xs'
@@ -149,7 +149,7 @@ export const AquaChatBot: React.FC<AquaChatBotProps> = ({ telemetry }) => {
                       key={idx}
                       type="button"
                       onClick={() => handleSendMessage(q)}
-                      className="text-[11px] font-medium bg-slate-950/60 hover:bg-blue-600/20 text-slate-300 hover:text-blue-300 border border-slate-800 hover:border-blue-500/50 px-2.5 py-1 rounded-full transition-all text-left flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      className="text-[10px] sm:text-[11px] font-medium bg-slate-950/60 hover:bg-blue-600/20 text-slate-300 hover:text-blue-300 border border-slate-800 hover:border-blue-500/50 px-2.5 py-1 rounded-full transition-all text-left flex items-center gap-1.5 cursor-pointer shadow-xs min-h-[30px]"
                     >
                       <Sparkles className="w-2.5 h-2.5 text-blue-400 shrink-0" />
                       <span>{q}</span>
@@ -163,15 +163,15 @@ export const AquaChatBot: React.FC<AquaChatBotProps> = ({ telemetry }) => {
 
         {/* Loading Bubble */}
         {isSending && (
-          <div className="flex gap-3 mr-auto max-w-[80%] items-center">
+          <div className="flex gap-2.5 sm:gap-3 mr-auto max-w-[85%] items-center">
             <div className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700 text-blue-400 flex items-center justify-center shrink-0">
               <Bot className="w-3.5 h-3.5" />
             </div>
-            <div className="bg-slate-950/80 text-slate-400 p-3 rounded-2xl text-xs border border-slate-800 flex items-center gap-2 font-mono">
+            <div className="bg-slate-950/80 text-slate-400 p-2.5 sm:p-3 rounded-2xl text-xs border border-slate-800 flex items-center gap-2 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.4s]" />
-              <span className="text-[11px]">Inspecting sensor logs...</span>
+              <span className="text-[10px] sm:text-[11px]">Inspecting sensor logs...</span>
             </div>
           </div>
         )}
@@ -184,22 +184,22 @@ export const AquaChatBot: React.FC<AquaChatBotProps> = ({ telemetry }) => {
           e.preventDefault();
           handleSendMessage();
         }}
-        className="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center gap-2"
+        className="p-2.5 sm:p-3 border-t border-slate-800 bg-slate-950/80 flex items-center gap-2"
       >
         <input
           id="chat-user-input"
           type="text"
           value={inputQuery}
           onChange={(e) => setInputQuery(e.target.value)}
-          placeholder="Ask e.g. 'How much water did we use today?' or 'Is the pump healthy?'"
+          placeholder="Ask e.g. 'How much water did we use today?'"
           disabled={isSending}
-          className="flex-1 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition-all font-mono"
+          className="flex-1 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm sm:text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition-all font-mono min-h-[42px]"
         />
         <button
           id="send-chat-button"
           type="submit"
           disabled={!inputQuery.trim() || isSending}
-          className="p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/50 disabled:opacity-40 disabled:border-slate-800 transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)] cursor-pointer"
+          className="p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/50 disabled:opacity-40 disabled:border-slate-800 transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)] cursor-pointer min-h-[42px] min-w-[42px] flex items-center justify-center shrink-0"
         >
           <Send className="w-4 h-4" />
         </button>

@@ -183,78 +183,83 @@ service cloud.firestore {
 }`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+    <div id="schema-functions-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
       <div className="bg-slate-900 rounded-3xl max-w-4xl w-full border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-4 bg-slate-950/90 text-white flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)]">
-              <Database className="w-5 h-5" />
+        <div className="p-3.5 sm:p-4 bg-slate-950/90 text-white flex items-center justify-between border-b border-slate-800 gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)] shrink-0">
+              <Database className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="font-bold text-sm text-slate-100">Generated Firebase & Cloud Architecture</h3>
-              <p className="text-xs text-slate-400">
-                Production-ready Firestore Schemas, Cloud Functions v2, and Security Rules
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-xs sm:text-sm text-slate-100 truncate">Firebase Architecture</h3>
+                <span className="text-[9px] sm:text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0">
+                  ACTIVE
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+                Project: <span className="text-blue-300 font-mono">massive-skein-st8c4</span> • Firestore Rules
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="px-4 pt-3 bg-slate-950/60 flex items-center gap-2 border-b border-slate-800">
+        <div className="px-3 sm:px-4 pt-2.5 bg-slate-950/60 flex items-center gap-2 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('schema')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'schema'
                 ? 'bg-slate-900 text-blue-400 border-t-2 border-blue-400'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <FileJson className="w-4 h-4" />
-            <span>1. Firestore Schema (JSON)</span>
+            <FileJson className="w-4 h-4 shrink-0" />
+            <span>1. Schema (JSON)</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('functions')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'functions'
                 ? 'bg-slate-900 text-blue-400 border-t-2 border-blue-400'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Code className="w-4 h-4" />
-            <span>2. Cloud Functions (TypeScript)</span>
+            <Code className="w-4 h-4 shrink-0" />
+            <span>2. Cloud Functions</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('rules')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 text-xs font-semibold rounded-t-xl transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'rules'
                 ? 'bg-slate-900 text-blue-400 border-t-2 border-blue-400'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>3. Firestore Security Rules</span>
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>3. Security Rules</span>
           </button>
         </div>
 
         {/* Code Content Body */}
-        <div className="p-4 bg-slate-950 flex-1 overflow-y-auto font-mono text-xs text-slate-300 relative">
-          <div className="absolute top-4 right-4 z-10">
+        <div className="p-3 sm:p-4 bg-slate-950 flex-1 overflow-y-auto font-mono text-[11px] sm:text-xs text-slate-300 relative">
+          <div className="sticky top-0 float-right z-10 pb-2">
             {activeTab === 'schema' && (
               <button
                 type="button"
                 onClick={() => handleCopy('schema', schemaContent)}
-                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer backdrop-blur-md"
               >
                 {copied === 'schema' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied === 'schema' ? 'Copied!' : 'Copy Schema'}</span>
@@ -264,7 +269,7 @@ service cloud.firestore {
               <button
                 type="button"
                 onClick={() => handleCopy('functions', cloudFunctionsCode)}
-                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer backdrop-blur-md"
               >
                 {copied === 'functions' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied === 'functions' ? 'Copied!' : 'Copy Functions'}</span>
@@ -274,7 +279,7 @@ service cloud.firestore {
               <button
                 type="button"
                 onClick={() => handleCopy('rules', securityRulesCode)}
-                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)] cursor-pointer backdrop-blur-md"
               >
                 {copied === 'rules' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied === 'rules' ? 'Copied!' : 'Copy Rules'}</span>
@@ -282,7 +287,7 @@ service cloud.firestore {
             )}
           </div>
 
-          <pre className="whitespace-pre-wrap leading-relaxed">
+          <pre className="whitespace-pre-wrap leading-relaxed clear-both break-words">
             {activeTab === 'schema' && schemaContent}
             {activeTab === 'functions' && cloudFunctionsCode}
             {activeTab === 'rules' && securityRulesCode}
@@ -290,12 +295,12 @@ service cloud.firestore {
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-slate-950/90 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-          <span>Files saved in repository under <code className="font-mono text-blue-400 font-semibold">/firebase/</code></span>
+        <div className="p-3 bg-slate-950/90 border-t border-slate-800 text-[11px] sm:text-xs text-slate-400 flex items-center justify-between gap-2 shrink-0">
+          <span className="truncate">Saved under <code className="font-mono text-blue-400 font-semibold">/firebase/</code></span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
           >
             Close Viewer
           </button>

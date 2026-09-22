@@ -40,17 +40,25 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
   });
 
   const requestBrowserPushPermission = async () => {
-    if (!('Notification' in window)) {
-      alert('This browser does not support desktop push notifications.');
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setPushStatus('unsupported');
       return;
     }
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      setPushStatus('granted');
-      new Notification('Smart Water Tank Alert Active', {
-        body: 'FCM Push Notifications enabled for Critical Low (<15%) and Overflow risks.',
-      });
-    } else {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setPushStatus('granted');
+        try {
+          new Notification('Smart Water Tank Alert Active', {
+            body: 'FCM Push Notifications enabled for Critical Low (<15%) and Overflow risks.',
+          });
+        } catch {
+          // ignore notification constructor failure in restricted sandboxes
+        }
+      } else {
+        setPushStatus('denied');
+      }
+    } catch {
       setPushStatus('denied');
     }
   };
@@ -69,11 +77,11 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
   };
 
   return (
-    <div id="alerts-notification-center" className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-[0_0_40px_rgba(15,23,42,0.4)] space-y-5 backdrop-blur-sm relative overflow-hidden">
+    <div id="alerts-notification-center" className="bg-slate-900/40 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-[0_0_40px_rgba(15,23,42,0.4)] space-y-4 sm:space-y-5 backdrop-blur-sm relative overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative shrink-0">
             <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)]">
               <Bell className="w-5 h-5" />
             </div>
@@ -97,21 +105,21 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
         </div>
 
         {/* Action controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Audio Chime Toggle */}
           <button
             id="toggle-audio-alert-btn"
             type="button"
             onClick={onToggleSound}
             title={soundEnabled ? 'Disable audio alerts' : 'Enable audio alerts'}
-            className={`p-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
               soundEnabled
                 ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
                 : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
             }`}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            <span className="hidden sm:inline">{soundEnabled ? 'Chime ON' : 'Muted'}</span>
+            <span>{soundEnabled ? 'Chime ON' : 'Muted'}</span>
           </button>
 
           {/* Browser Push Perm */}
@@ -119,9 +127,9 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
             id="enable-browser-push-btn"
             type="button"
             onClick={requestBrowserPushPermission}
-            className="px-3 py-2 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-900 text-xs font-semibold text-slate-300 hover:text-slate-100 transition-all flex items-center gap-1 cursor-pointer"
+            className="px-3 py-2 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-900 text-xs font-semibold text-slate-300 hover:text-slate-100 transition-all flex items-center gap-1 cursor-pointer min-h-[38px]"
           >
-            <span>{pushStatus === 'granted' ? 'Push Enabled' : 'Enable Push'}</span>
+            <span>{pushStatus === 'granted' ? 'Push Enabled' : pushStatus === 'unsupported' ? 'Push Unavailable' : 'Enable Push'}</span>
           </button>
 
           {/* Clear all */}
@@ -129,7 +137,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
             <button
               type="button"
               onClick={onClearAlerts}
-              className="p-2 rounded-xl border border-slate-800 hover:bg-rose-500/20 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
+              className="p-2 rounded-xl border border-slate-800 hover:bg-rose-500/20 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
               title="Clear all alerts"
             >
               <Trash2 className="w-4 h-4" />
@@ -139,11 +147,11 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
       </div>
 
       {/* Severity Filter Tabs */}
-      <div className="flex items-center gap-2 text-xs font-medium">
+      <div className="flex items-center gap-2 text-xs font-medium overflow-x-auto no-scrollbar pb-1">
         <button
           type="button"
           onClick={() => setFilter('all')}
-          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
             filter === 'all'
               ? 'bg-blue-600/20 border-blue-500/50 text-blue-300 font-bold shadow-[0_0_10px_rgba(59,130,246,0.2)]'
               : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -154,7 +162,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
         <button
           type="button"
           onClick={() => setFilter('critical')}
-          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
             filter === 'critical'
               ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-[0_0_10px_rgba(244,63,94,0.2)]'
               : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-rose-400'
@@ -165,7 +173,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
         <button
           type="button"
           onClick={() => setFilter('warning')}
-          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
             filter === 'warning'
               ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)]'
               : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-amber-400'
@@ -187,7 +195,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
           filteredAlerts.map((alert) => (
             <div
               key={alert.id}
-              className={`p-3.5 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+              className={`p-3 sm:p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3 ${
                 alert.read
                   ? 'bg-slate-950/40 border-slate-800/80 opacity-60'
                   : alert.severity === 'critical'
@@ -197,12 +205,12 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
                   : 'bg-slate-950/60 border-slate-800'
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <div className="p-2 bg-slate-900 rounded-xl border border-slate-800 shrink-0 mt-0.5">
                   {getAlertIcon(alert.type, alert.severity)}
                 </div>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span className="font-bold text-xs text-slate-100">{alert.title}</span>
                     {alert.metricValue && (
                       <span className="text-[10px] font-mono font-bold bg-slate-900 px-1.5 py-0.5 rounded-md border border-slate-800 text-slate-300">
@@ -210,7 +218,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">{alert.message}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed break-words">{alert.message}</p>
                   <span className="text-[10px] text-slate-500 font-mono block">
                     {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(alert.timestamp).toLocaleDateString()}
                   </span>
@@ -221,7 +229,7 @@ export const AlertsNotificationCenter: React.FC<AlertsNotificationCenterProps> =
                 <button
                   type="button"
                   onClick={() => onAcknowledgeAlert(alert.id)}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-slate-100 shrink-0 transition-all cursor-pointer"
+                  className="px-3 py-1.5 text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-slate-100 shrink-0 transition-all cursor-pointer self-end sm:self-auto min-h-[32px]"
                 >
                   Acknowledge
                 </button>

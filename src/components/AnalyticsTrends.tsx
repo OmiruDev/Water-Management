@@ -95,11 +95,11 @@ export const AnalyticsTrends: React.FC<AnalyticsTrendsProps> = ({
           </div>
 
           {/* Time Window (24h / 7d) */}
-          <div className="bg-slate-950/80 border border-slate-800 p-1 rounded-xl flex items-center text-xs font-medium">
+          <div className="bg-slate-950/80 border border-slate-800 p-1 rounded-xl flex items-center text-xs font-medium shrink-0">
             <button
               type="button"
               onClick={() => setTimeRange('24h')}
-              className={`px-2.5 py-1.5 rounded-lg transition-all font-mono ${
+              className={`px-2.5 py-1.5 rounded-lg transition-all font-mono cursor-pointer ${
                 timeRange === '24h' 
                   ? 'bg-blue-600 text-white font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
                   : 'text-slate-400 hover:text-slate-200'
@@ -110,7 +110,7 @@ export const AnalyticsTrends: React.FC<AnalyticsTrendsProps> = ({
             <button
               type="button"
               onClick={() => setTimeRange('7d')}
-              className={`px-2.5 py-1.5 rounded-lg transition-all font-mono ${
+              className={`px-2.5 py-1.5 rounded-lg transition-all font-mono cursor-pointer ${
                 timeRange === '7d' 
                   ? 'bg-blue-600 text-white font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
                   : 'text-slate-400 hover:text-slate-200'
@@ -123,54 +123,54 @@ export const AnalyticsTrends: React.FC<AnalyticsTrendsProps> = ({
       </div>
 
       {/* Aggregate KPI Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Consumed</span>
-          <div className="text-xl font-mono font-bold text-slate-100 mt-1">
-            {totalConsumption.toLocaleString()} <span className="text-xs font-normal text-slate-400">Liters</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-3 sm:p-4 min-w-0">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-slate-400 truncate block">Total Consumed</span>
+          <div className="text-lg sm:text-xl font-mono font-bold text-slate-100 mt-1 truncate">
+            {totalConsumption.toLocaleString()} <span className="text-xs font-normal text-slate-400">L</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">
+          <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 block truncate">
             ~{avgHourlyConsumption} L/{timeRange === '24h' ? 'hr' : 'day'}
           </span>
         </div>
 
-        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pump Run-Time</span>
-          <div className="text-xl font-mono font-bold text-blue-400 mt-1 flex items-baseline gap-1">
-            <span>{(totalPumpMins / 60).toFixed(1)}</span>
-            <span className="text-xs font-normal text-slate-400">Hours ({totalPumpMins}m)</span>
+        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-3 sm:p-4 min-w-0">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-slate-400 truncate block">Pump Run-Time</span>
+          <div className="text-lg sm:text-xl font-mono font-bold text-blue-400 mt-1 flex items-baseline gap-1 truncate">
+            <span>{(totalPumpMins / 60).toFixed(1)}h</span>
+            <span className="text-xs font-normal text-slate-400">({totalPumpMins}m)</span>
           </div>
-          <span className="text-[11px] text-emerald-400 font-mono mt-0.5 block">
+          <span className="text-[10px] sm:text-[11px] text-emerald-400 font-mono mt-0.5 block truncate">
             Duty: {((totalPumpMins / (timeRange === '24h' ? 1440 : 10080)) * 100).toFixed(1)}%
           </span>
         </div>
 
-        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Power Consumed</span>
-          <div className="text-xl font-mono font-bold text-amber-400 mt-1 flex items-baseline gap-1">
-            <Zap className="w-4 h-4 text-amber-400" />
+        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-3 sm:p-4 min-w-0">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-slate-400 truncate block">Power Consumed</span>
+          <div className="text-lg sm:text-xl font-mono font-bold text-amber-400 mt-1 flex items-baseline gap-1 truncate">
+            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
             <span>{totalEnergyKWh.toFixed(2)}</span>
             <span className="text-xs font-normal text-slate-400">kWh</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">
+          <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 block truncate">
             {config.pumpPowerWatts}W Motor
           </span>
         </div>
 
-        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Energy Cost</span>
-          <div className="text-xl font-mono font-bold text-emerald-400 mt-1 flex items-baseline gap-1">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+        <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-3 sm:p-4 min-w-0">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-slate-400 truncate block">Energy Cost</span>
+          <div className="text-lg sm:text-xl font-mono font-bold text-emerald-400 mt-1 flex items-baseline gap-1 truncate">
+            <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
             <span>${estimatedCost}</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">
+          <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 block truncate">
             ${config.electricityCostPerKWh}/kWh
           </span>
         </div>
       </div>
 
       {/* Main Interactive Recharts Stage */}
-      <div className="h-72 w-full pt-2">
+      <div className="h-64 sm:h-72 w-full min-w-0 pt-2">
         <ResponsiveContainer width="100%" height="100%">
           {activeMetric === 'waterLevel' ? (
             <AreaChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
